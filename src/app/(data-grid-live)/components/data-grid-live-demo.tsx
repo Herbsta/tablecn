@@ -6,7 +6,6 @@ import * as React from "react";
 import { use } from "react";
 import { toast } from "sonner";
 import {
-  generateRandomSkater,
   getSkaterStatusIcon,
   getStanceIcon,
   getStyleIcon,
@@ -363,12 +362,11 @@ export function DataGridLiveDemo() {
     [data],
   );
 
-  const { trackCellsUpdate, trackRowsAdd, trackRowsDelete } =
-    useDataGridUndoRedo({
-      data,
-      onDataChange: undoRedoOnDataChange,
-      getRowId: (row) => row.id,
-    });
+  const { trackCellsUpdate } = useDataGridUndoRedo({
+    data,
+    onDataChange: undoRedoOnDataChange,
+    getRowId: (row) => row.id,
+  });
 
   const onDataChange: NonNullable<
     UseDataGridProps<SkaterSchema>["onDataChange"]
@@ -424,75 +422,9 @@ export function DataGridLiveDemo() {
     [data, trackCellsUpdate],
   );
 
-  const onRowAdd: NonNullable<UseDataGridProps<SkaterSchema>["onRowAdd"]> =
-    React.useCallback(() => {
-      const maxOrder = data.reduce((max, s) => Math.max(max, s.order), 0);
-      const newSkater = generateRandomSkater();
-      const skaterWithOrder = { ...newSkater, order: maxOrder + 1 };
-
-      skatersCollection.insert(skaterWithOrder);
-
-      // Track for undo/redo
-      trackRowsAdd([skaterWithOrder]);
-
-      return {
-        rowIndex: data.length,
-        columnId: "name",
-      };
-    }, [data, trackRowsAdd]);
-
-  const onRowsAdd: NonNullable<UseDataGridProps<SkaterSchema>["onRowsAdd"]> =
-    React.useCallback(
-      (count: number) => {
-        const maxOrder = data.reduce((max, s) => Math.max(max, s.order), 0);
-        const newRows: SkaterSchema[] = [];
-
-        for (let i = 0; i < count; i++) {
-          const newSkater: SkaterSchema = {
-            id: generateId(),
-            name: null,
-            email: null,
-            stance: "regular",
-            style: "street",
-            status: "amateur",
-            yearsSkating: 0,
-            startedSkating: null,
-            isPro: false,
-            tricks: null,
-            notes: null,
-            order: maxOrder + i + 1,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          };
-          newRows.push(newSkater);
-          skatersCollection.insert(newSkater);
-        }
-
-        // Track for undo/redo
-        trackRowsAdd(newRows);
-      },
-      [data, trackRowsAdd],
-    );
-
-  const onRowsDelete: NonNullable<
-    UseDataGridProps<SkaterSchema>["onRowsDelete"]
-  > = React.useCallback(
-    (rowsToDelete) => {
-      // Track for undo/redo (before deletion to capture the rows)
-      trackRowsDelete(rowsToDelete);
-
-      // Use batch delete - single transaction for all deletions
-      skatersCollection.delete(rowsToDelete.map((skater) => skater.id));
-    },
-    [trackRowsDelete],
-  );
-
   const { table, tableMeta, ...dataGridProps } = useDataGrid({
     data,
     onDataChange,
-    onRowAdd,
-    onRowsAdd,
-    onRowsDelete,
     columns,
     getRowId: (row) => row.id,
     initialState: {
@@ -557,23 +489,6 @@ export function DataGridLiveDemo() {
     [table],
   );
 
-  const onDelete = React.useCallback(() => {
-    const selectedRows = table.getSelectedRowModel().rows;
-    if (selectedRows.length === 0) {
-      toast.error("No skaters selected");
-      return;
-    }
-
-    const rowIndices = selectedRows.map((row) => row.index);
-
-    tableMeta.onRowsDelete?.(rowIndices);
-
-    toast.success(
-      `${selectedRows.length} skater${selectedRows.length === 1 ? "" : "s"} deleted`,
-    );
-    table.toggleAllRowsSelected(false);
-  }, [table, tableMeta]);
-
   const height = Math.max(400, windowSize.height - 150);
   const selectedCellCount = tableMeta.selectionState?.selectedCells.size ?? 0;
 
@@ -623,7 +538,6 @@ export function DataGridLiveDemo() {
         styleOptions={styleOptions}
         onStatusUpdate={onStatusUpdate}
         onStyleUpdate={onStyleUpdate}
-        onDelete={onDelete}
       />
     </div>
   );
