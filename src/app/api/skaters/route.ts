@@ -1,11 +1,6 @@
 import { eq, inArray } from "drizzle-orm";
 import { NextResponse } from "next/server";
-import {
-  deleteSkatersSchema,
-  insertSkaterSchema,
-  insertSkatersSchema,
-  updateSkatersSchema,
-} from "@/app/(data-grid-live)/lib/validation";
+import { updateSkatersSchema } from "@/app/(data-grid-live)/lib/validation";
 import { db } from "@/db";
 import { type Skater, skaters } from "@/db/schema";
 
@@ -17,55 +12,6 @@ export async function GET() {
     console.error({ error });
     return NextResponse.json(
       { error: "Failed to fetch skaters" },
-      { status: 500 },
-    );
-  }
-}
-
-// Supports both single insert and bulk insert
-// Single: { name, email, ... }
-// Bulk: { skaters: [{ name, email, ... }, ...] }
-export async function POST(request: Request) {
-  try {
-    const body: unknown = await request.json();
-
-    // Try bulk insert first
-    const bulkResult = insertSkatersSchema.safeParse(body);
-    if (bulkResult.success) {
-      const newSkaters = await db
-        .insert(skaters)
-        .values(bulkResult.data.skaters)
-        .returning();
-
-      return NextResponse.json({
-        inserted: newSkaters.length,
-        skaters: newSkaters,
-      });
-    }
-
-    // Try single insert
-    const singleResult = insertSkaterSchema.safeParse(body);
-    if (!singleResult.success) {
-      return NextResponse.json(
-        {
-          error: "Invalid request body",
-          details: singleResult.error.flatten(),
-        },
-        { status: 400 },
-      );
-    }
-
-    const newSkater = await db
-      .insert(skaters)
-      .values(singleResult.data)
-      .returning()
-      .then((res) => res[0]);
-
-    return NextResponse.json(newSkater);
-  } catch (error) {
-    console.error({ error });
-    return NextResponse.json(
-      { error: "Failed to create skater" },
       { status: 500 },
     );
   }
@@ -145,35 +91,6 @@ export async function PATCH(request: Request) {
     console.error({ error });
     return NextResponse.json(
       { error: "Failed to update skaters" },
-      { status: 500 },
-    );
-  }
-}
-
-// Bulk delete endpoint
-// Body: { ids: string[] }
-export async function DELETE(request: Request) {
-  try {
-    const body: unknown = await request.json();
-
-    const result = deleteSkatersSchema.safeParse(body);
-    if (!result.success) {
-      return NextResponse.json(
-        { error: "Invalid request body", details: result.error.flatten() },
-        { status: 400 },
-      );
-    }
-
-    const deletedSkaters = await db
-      .delete(skaters)
-      .where(inArray(skaters.id, result.data.ids))
-      .returning();
-
-    return NextResponse.json({ deleted: deletedSkaters.length });
-  } catch (error) {
-    console.error({ error });
-    return NextResponse.json(
-      { error: "Failed to delete skaters" },
       { status: 500 },
     );
   }

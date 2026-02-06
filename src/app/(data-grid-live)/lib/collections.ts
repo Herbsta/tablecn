@@ -26,32 +26,6 @@ export const skatersCollection = createCollection(
     },
     getKey: (item: SkaterSchema) => item.id,
     schema: skaterSchema,
-    onInsert: async ({ transaction }) => {
-      const skatersToInsert = transaction.mutations
-        .map((m) => m?.modified)
-        .filter((modified): modified is SkaterSchema => modified != null)
-        .map(
-          ({
-            // Exclude auto-generated timestamp fields (but keep id!)
-            createdAt: _createdAt,
-            updatedAt: _updatedAt,
-            ...data
-          }) => data,
-        );
-
-      if (skatersToInsert.length === 0) return;
-
-      // Use bulk insert - single DB query for all inserts
-      const response = await fetch(getAbsoluteUrl("/api/skaters"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ skaters: skatersToInsert }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to create skaters");
-      }
-    },
     onUpdate: async ({ transaction }) => {
       const updates = transaction.mutations
         .filter(
@@ -75,24 +49,6 @@ export const skatersCollection = createCollection(
 
       if (!response.ok) {
         throw new Error("Failed to update skaters");
-      }
-    },
-    onDelete: async ({ transaction }) => {
-      const ids = transaction.mutations
-        .map((m) => m?.key)
-        .filter((id): id is string => id != null);
-
-      if (ids.length === 0) return;
-
-      // Use bulk delete - single DB query for all deletes
-      const response = await fetch(getAbsoluteUrl("/api/skaters"), {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to delete skaters");
       }
     },
   }),
