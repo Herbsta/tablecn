@@ -18,6 +18,7 @@ import {
   type FilterPreset,
 } from "@/components/data-grid/data-grid-filter-presets";
 import { DataGridKeyboardShortcuts } from "@/components/data-grid/data-grid-keyboard-shortcuts";
+import { DataGridPersistence } from "@/components/data-grid/data-grid-persistence";
 import { DataGridRowHeightMenu } from "@/components/data-grid/data-grid-row-height-menu";
 import { getDataGridSelectColumn } from "@/components/data-grid/data-grid-select-column";
 import { DataGridSortMenu } from "@/components/data-grid/data-grid-sort-menu";
@@ -170,7 +171,10 @@ export function DataGridLiveDemo() {
 
   const columns = React.useMemo<ColumnDef<SkaterSchema>[]>(
     () => [
-      getDataGridSelectColumn<SkaterSchema>({ enableRowMarkers: true }),
+      getDataGridSelectColumn<SkaterSchema>({
+        enableRowMarkers: true,
+        enableSelectAll: false,
+      }),
       {
         id: "name",
         accessorKey: "name",
@@ -496,6 +500,7 @@ export function DataGridLiveDemo() {
   return (
     <div className="flex flex-col gap-4 p-4">
       {/* Maybe use "container" in classname for the parent div */}
+      <DataGridPersistence table={table} storageKey="data-grid-live" />
       <div
         role="toolbar"
         aria-orientation="horizontal"
